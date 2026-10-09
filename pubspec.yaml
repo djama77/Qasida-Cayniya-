@@ -1,0 +1,19 @@
+name: qasida_afrah
+description: Offline Arabic Qasida reader
+publish_to: none
+version: 1.1.0+2
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  pdfx: ^2.10.0
+  shared_preferences: ^2.5.3
+  just_audio: ^0.9.46
+  file_picker: ^8.3.7
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/qasida.pdf
+    - assets/audio/cheikh_bache_partie_1.mp3
+    - assets/audio/cheikh_bache_partie_2.mp3
