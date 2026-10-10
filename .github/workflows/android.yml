@@ -35,6 +35,11 @@ jobs:
             flutter create . --platforms=android
           fi
 
+      - name: Install Android API 36
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Install dependencies
         run: flutter pub get
 
