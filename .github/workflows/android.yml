@@ -35,9 +35,6 @@ jobs:
             flutter create . --platforms=android
           fi
 
-      - name: Accept Android licenses
-        run: flutter doctor --android-licenses || true
-
       - name: Install dependencies
         run: flutter pub get
 
