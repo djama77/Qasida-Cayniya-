@@ -9,7 +9,7 @@ Application Flutter Android de lecture de la Qasida Cayniya.
 - favoris par page ;
 - écran d'accueil simple ;
 - lecture audio Cheikh Bache — Partie 1 et Partie 2 ;
-- association des MP3 présents sur le téléphone ;
+- lecture des deux MP3 intégrés à l’application ;
 - fonctionnement du document PDF sans connexion Internet.
 
 ## Développement
@@ -35,6 +35,9 @@ Le workflow GitHub Actions `.github/workflows/android.yml` construit également 
 
 ## Audio
 
-Les fichiers MP3 ne sont pas encore stockés comme assets autonomes dans le dépôt. Dans l'application, ouvrez **Écouter Cheikh Bache**, puis associez un MP3 à **Partie 1** et un autre à **Partie 2** depuis le téléphone.
+Les fichiers audio suivants sont embarqués directement dans l’APK :
 
-Quand les deux MP3 seront ajoutés au dépôt, l'application pourra être adaptée pour les embarquer directement dans l'APK.
+- `cayniya cheikh bache parti 1.mp3` ;
+- `cayniya cheikh bache parti 2.mp3`.
+
+Ouvrez **Écouter Cheikh Bache** pour écouter chaque partie. Après installation, la lecture audio fonctionne hors connexion.
