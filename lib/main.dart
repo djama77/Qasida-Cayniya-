@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:pdfx/pdfx.dart';
@@ -119,7 +118,7 @@ class _HomePageState extends State<HomePage> {
             _HomeActionCard(
               icon: Icons.headphones,
               title: 'Écouter Cheikh Bache',
-              subtitle: 'Associer puis écouter les parties 1 et 2 en MP3',
+              subtitle: 'Écouter les deux parties intégrées, même hors connexion',
               onTap: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const AudioPage()),
@@ -143,7 +142,7 @@ class _HomePageState extends State<HomePage> {
                 leading: Icon(Icons.info_outline),
                 title: Text('Version actuelle'),
                 subtitle: Text(
-                  'PDF intégré. Les deux MP3 peuvent être choisis depuis le téléphone puis associés aux boutons Partie 1 et Partie 2.',
+                  'PDF et deux audios intégrés à l’application pour une utilisation hors connexion.',
                 ),
               ),
             ),
@@ -428,88 +427,12 @@ class AudioPage extends StatefulWidget {
 
 class _AudioPageState extends State<AudioPage> {
   final AudioPlayer player = AudioPlayer();
-  final SharedPreferencesAsync prefs = SharedPreferencesAsync();
-
-  String? part1Path;
-  String? part1Name;
-  String? part2Path;
-  String? part2Name;
   int? activePart;
 
-  @override
-  void initState() {
-    super.initState();
-    _restoreAudioSlots();
-  }
-
-  Future<void> _restoreAudioSlots() async {
-    final p1 = await prefs.getString('audio_part_1_path');
-    final n1 = await prefs.getString('audio_part_1_name');
-    final p2 = await prefs.getString('audio_part_2_path');
-    final n2 = await prefs.getString('audio_part_2_name');
-    if (!mounted) return;
-    setState(() {
-      part1Path = p1;
-      part1Name = n1;
-      part2Path = p2;
-      part2Name = n2;
-    });
-  }
-
-  Future<void> _chooseForPart(int part) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
-    final file = result?.files.single;
-    final path = file?.path;
-    if (file == null || path == null) return;
-
-    if (part == 1) {
-      await prefs.setString('audio_part_1_path', path);
-      await prefs.setString('audio_part_1_name', file.name);
-      if (!mounted) return;
-      setState(() {
-        part1Path = path;
-        part1Name = file.name;
-      });
-    } else {
-      await prefs.setString('audio_part_2_path', path);
-      await prefs.setString('audio_part_2_name', file.name);
-      if (!mounted) return;
-      setState(() {
-        part2Path = path;
-        part2Name = file.name;
-      });
-    }
-  }
-
-  Future<void> _playPart(int part) async {
-    final path = part == 1 ? part1Path : part2Path;
-    if (path == null) {
-      await _chooseForPart(part);
-      return;
-    }
-
-    try {
-      if (activePart == part && player.playing) {
-        await player.pause();
-        return;
-      }
-      if (activePart != part) {
-        await player.setFilePath(path);
-        if (!mounted) return;
-        setState(() => activePart = part);
-      }
-      await player.play();
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Le fichier de la Partie $part n’est plus accessible. Choisissez-le de nouveau.',
-          ),
-        ),
-      );
-    }
-  }
+  static const Map<int, String> audioAssets = {
+    1: 'cayniya cheikh bache parti 1.mp3',
+    2: 'cayniya cheikh bache parti 2.mp3',
+  };
 
   @override
   void dispose() {
@@ -517,12 +440,32 @@ class _AudioPageState extends State<AudioPage> {
     super.dispose();
   }
 
+  Future<void> _playPart(int part) async {
+    try {
+      if (activePart == part && player.playing) {
+        await player.pause();
+        return;
+      }
+      if (activePart != part) {
+        await player.setAsset(audioAssets[part]!);
+        if (!mounted) return;
+        setState(() => activePart = part);
+      }
+      await player.play();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Impossible de lire la Partie $part : $error'),
+        ),
+      );
+    }
+  }
+
   Widget _audioCard({
     required int part,
     required String title,
-    required String? name,
   }) {
-    final configured = name != null;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -531,32 +474,23 @@ class _AudioPageState extends State<AudioPage> {
             ListTile(
               leading: CircleAvatar(child: Text('$part')),
               title: Text(title),
-              subtitle: Text(name ?? 'Aucun MP3 associé'),
+              subtitle: const Text('Audio intégré à l’application'),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _chooseForPart(part),
-                    icon: const Icon(Icons.audio_file),
-                    label: Text(configured ? 'Changer le MP3' : 'Choisir le MP3'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                StreamBuilder<bool>(
-                  stream: player.playingStream,
-                  initialData: false,
-                  builder: (_, snapshot) {
-                    final isPlaying =
-                        activePart == part && snapshot.data == true;
-                    return FilledButton.icon(
-                      onPressed: () => _playPart(part),
-                      icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-                      label: Text(isPlaying ? 'Pause' : 'Écouter'),
-                    );
-                  },
-                ),
-              ],
+            Align(
+              alignment: Alignment.center,
+              child: StreamBuilder<bool>(
+                stream: player.playingStream,
+                initialData: false,
+                builder: (_, snapshot) {
+                  final isPlaying =
+                      activePart == part && snapshot.data == true;
+                  return FilledButton.icon(
+                    onPressed: () => _playPart(part),
+                    icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                    label: Text(isPlaying ? 'Pause' : 'Écouter'),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -576,21 +510,13 @@ class _AudioPageState extends State<AudioPage> {
               leading: Icon(Icons.offline_bolt_outlined),
               title: Text('Lecture hors connexion'),
               subtitle: Text(
-                'Choisissez les deux fichiers MP3 présents sur votre téléphone. Ils seront associés à Partie 1 et Partie 2.',
+                'Les deux parties audio sont intégrées à l’application. Aucune connexion Internet ni sélection de fichier n’est nécessaire.',
               ),
             ),
           ),
           const SizedBox(height: 8),
-          _audioCard(
-            part: 1,
-            title: 'Cheikh Bache — Partie 1',
-            name: part1Name,
-          ),
-          _audioCard(
-            part: 2,
-            title: 'Cheikh Bache — Partie 2',
-            name: part2Name,
-          ),
+          _audioCard(part: 1, title: 'Cheikh Bache — Partie 1'),
+          _audioCard(part: 2, title: 'Cheikh Bache — Partie 2'),
           const SizedBox(height: 12),
           StreamBuilder<Duration>(
             stream: player.positionStream,
@@ -616,9 +542,7 @@ class _AudioPageState extends State<AudioPage> {
                             )
                         : null,
                   ),
-                  Text(
-                    '${_format(position)} / ${_format(duration)}',
-                  ),
+                  Text('${_format(position)} / ${_format(duration)}'),
                 ],
               );
             },
