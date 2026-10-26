@@ -35,6 +35,9 @@ jobs:
             flutter create . --platforms=android
           fi
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Android API 36
         run: |
           yes | sdkmanager --licenses >/dev/null || true
